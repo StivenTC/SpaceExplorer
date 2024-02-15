@@ -29,14 +29,14 @@ export class Game extends Scene {
 
   create() {
     //  A simple background for our game
-    this.add.image(400, 300, 'space');
+    this.add.image(512, 384, 'space');
 
     //  The platforms group contains the ground and the 2 ledges we can jump on
     moons = this.physics.add.staticGroup();
     platform = this.physics.add.staticGroup();
 
     //  Now let's create some ledges
-    platform.create(400, 700, 'platform');
+    platform.create(512, 800, 'platform');
 
     // The player and its settings
     player = this.physics.add.image(400, 500, 'ship');
