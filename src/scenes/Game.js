@@ -1,6 +1,4 @@
 import { Scene } from 'phaser';
-//import levelUp from '../actions/levelUp';
-//import hitAsteroid from '../actions/hitAsteroid';
 
 var player;
 var platform;
@@ -10,7 +8,6 @@ var limit_asteroids = 10;
 var disable_asteroids = [];
 var cursors;
 var score = 0;
-var gameOver = false;
 var scoreText;
 
 export class Game extends Scene {
@@ -21,38 +18,50 @@ export class Game extends Scene {
 
   preload() {
     this.load.image('space', '../assets/deep_space.jpg');
-    this.load.image('ship', '../assets/ship.png');
     this.load.image('moon', '../assets/moon_1.png');
     this.load.image('platform', '../assets/platform.png');
     this.load.image('asteroid', '../assets/asteroid_2.png');
+    this.load.spritesheet('ship', '../assets/ship.png', { frameWidth: 36, frameHeight: 42 });
   }
 
   create() {
-    //  A simple background for our game
     this.add.image(512, 384, 'space');
 
-    //  The platforms group contains the ground and the 2 ledges we can jump on
-    moons = this.physics.add.staticGroup();
     platform = this.physics.add.staticGroup();
 
-    //  Now let's create some ledges
     platform.create(512, 800, 'platform');
 
-    // The player and its settings
-    player = this.physics.add.image(400, 500, 'ship');
-
-    //  Player physics properties. Give the little guy a slight bounce.
+    player = this.physics.add.sprite(400, 500, 'ship');
     player.setBounce(0.2);
     player.setCollideWorldBounds(true);
+
+    this.anims.create({
+      key: 'fire',
+      frames: this.anims.generateFrameNumbers('ship', { frames: [0, 1, 2, 3] }),
+      frameRate: 8,
+      repeat: -1
+    });
+
+    this.anims.create({
+      key: 'stop',
+      frames: [{ key: 'ship', frame: 0 }],
+      frameRate: 20
+    });
 
     //  Input Events
     cursors = this.input.keyboard.createCursorKeys();
 
-    //  Some stars to collect, 12 in total, evenly spaced 70 pixels apart along the x axis
     asteroids = this.physics.add.group({
       key: 'asteroid',
       repeat: 1,
+      setRotation: { value: 0, step: 0.06 },
       setXY: { x: Phaser.Math.Between(50, 400), y: 0, stepX: Phaser.Math.Between(5, 350) }
+    });
+
+    moons = this.physics.add.group({
+      key: 'moon',
+      repeat: 1,
+      setXY: { x: Phaser.Math.Between(50, 150), y: 0, stepX: Phaser.Math.Between(400, 700) }
     });
 
     asteroids.children.iterate(function (child) {
@@ -61,35 +70,28 @@ export class Game extends Scene {
       child.setVelocityY(Phaser.Math.Between(100, 200));
     });
 
-    // bombs = this.physics.add.group();
-    //asteroids.setCollideWorldBounds(true);
-
     //  The score
     scoreText = this.add.text(16, 16, 'score: 0', { fontSize: '16px', fill: '#f5f5f5' });
 
-    //  Collide the player and the stars with the platforms
-    this.physics.add.collider(player, moons);
-    // this.physics.add.collider(stars, platforms);
+    // Colliders
     this.physics.add.collider(asteroids, moons);
 
-    //  Checks to see if the player overlaps with any of the stars, if he does call the collectStar function
     this.physics.add.collider(asteroids, platform, this.levelUp, null, this);
+    this.physics.add.collider(asteroids, platform, this.hitMoons, null, this);
 
     this.physics.add.collider(player, asteroids, this.hitAsteroid, null, this);
+    this.physics.add.collider(player, moons, this.hitAsteroid, null, this);
 
-    //this.physics.add.collider(asteroids, collideWorldBounds, levelUp, null, this);
   }
 
   update() {
+    player.anims.play('fire', true);
+
     if (cursors.left.isDown) {
       player.setVelocityX(-160);
-
-      // player.anims.play('left', true);
     }
     else if (cursors.right.isDown) {
       player.setVelocityX(160);
-
-      // player.anims.play('right', true);
     } else if (cursors.up.isDown) {
       player.setVelocityY(-160);
 
@@ -99,29 +101,17 @@ export class Game extends Scene {
     else {
       player.setVelocityX(0);
       player.setVelocityY(0);
-
-      // player.anims.play('turn');
     }
-
-
-    /* if (cursors.up.isDown && player.body.touching.down) {
-       player.setVelocityY(-330);
-     }*/
   }
 
-  collectStar(asteroid) {
+  levelUp(asteroid) {
 
     //  Add and update the score
     score += 10;
     scoreText.setText('Score: ' + score);
-    phaseText.setText('limit: ' + limit_asteroids);
-    activeText.setText('Asteroids active: ' + asteroids.countActive(true));
-    disableText.setText('Asteroids disable: ' + asteroids.countActive(false));
-
 
     asteroid.setVelocityY(Phaser.Math.Between(50, 200));
     asteroid.setPosition(player.x + Phaser.Math.Between(-100, 100), 0);
-
 
     if (asteroids.countActive(true) < limit_asteroids) {
       if (asteroids.countActive(false) > 0) {
@@ -139,45 +129,31 @@ export class Game extends Scene {
       asteroid.disableBody(true, true);
       disable_asteroids.push(asteroid);
     }
+
+    if ((score % 250) === 0) {
+
+      moons = this.physics.add.group({
+        key: 'moon',
+        repeat: 1,
+        setXY: { x: Phaser.Math.Between(50, 150), y: 0, stepX: Phaser.Math.Between(400, 700) }
+      });
+
+      moons.setVelocityY(180);
+
+
+    }
   }
 
-  levelUp(asteroid, platform) {
-
-    //  Add and update the score
-    score += 10;
-    scoreText.setText('Score: ' + score);
-
-    asteroid.setVelocityY(Phaser.Math.Between(50, 200));
-    asteroid.setPosition(player.x + Phaser.Math.Between(-100, 100), 0);
-
-
-    if (asteroids.countActive(true) < limit_asteroids) {
-      if (asteroids.countActive(false) > 0) {
-        if (score >= 100) {
-          limit_asteroids = Math.trunc((score / 100) + 10);
-        }
-        disable_asteroids.map(function (child) {
-          child.enableBody(true, child.x, 0, true, true);
-        });
-        disable_asteroids = [];
-      } else {
-        asteroids.create(player.x + Phaser.Math.Between(-200, 200), -150, 'asteroid');
-      }
-    } else {
-      asteroid.disableBody(true, true);
-      disable_asteroids.push(asteroid);
-    }
+  hitMoons(moon) {
+    moon.disableBody(true, true);
   }
 
   hitAsteroid(player) {
     this.physics.pause();
     player.setTint(0xff0000);
+    player.anims.play('stop');
 
-    this.input.once('pointerdown', () => {
-
-      this.scene.start('GameOver');
-
-    });
+    this.scene.start('GameOver');
 
   }
 
