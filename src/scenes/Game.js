@@ -10,7 +10,6 @@ var limit_asteroids = 10;
 var disable_asteroids = [];
 var cursors;
 var score = 0;
-var phase = 0;
 var gameOver = false;
 var scoreText;
 
@@ -82,10 +81,6 @@ export class Game extends Scene {
   }
 
   update() {
-    if (gameOver) {
-      return;
-    }
-
     if (cursors.left.isDown) {
       player.setVelocityX(-160);
 
@@ -114,7 +109,7 @@ export class Game extends Scene {
      }*/
   }
 
-  collectStar(asteroid, platform) {
+  collectStar(asteroid) {
 
     //  Add and update the score
     score += 10;
@@ -174,18 +169,16 @@ export class Game extends Scene {
     }
   }
 
-  hitAsteroid(player, asteroid) {
+  hitAsteroid(player) {
     this.physics.pause();
     player.setTint(0xff0000);
-    gameOver = true;
-  }
 
-}
-/*
     this.input.once('pointerdown', () => {
 
       this.scene.start('GameOver');
 
     });
-*/
 
+  }
+
+}
